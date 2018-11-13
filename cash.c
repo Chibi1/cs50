@@ -1,4 +1,5 @@
 // This program calculates how much change is required to be given
+
 #include <stdio.h>
 #include <cs50.h>
 #include <math.h>
