@@ -1,3 +1,5 @@
+// Rudimentary bruteforce password cracker utilising hash matching
+
 #define _XOPEN_SOURCE
 
 #include <unistd.h>
