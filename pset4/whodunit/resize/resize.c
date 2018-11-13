@@ -1,4 +1,4 @@
-// Copies a BMP file
+// Resizes a BMP file
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,17 +72,23 @@ int main(int argc, char *argv[])
         return 4;
     }
 
-    // determine padding for scanlines
-    int padding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+    // new dimensions
+    int oldWidth = bi.biWidth;
+    int oldHeight = bi.biHeight;
+    int newWidth = oldWidth * scaling;
+    int newHeight = oldHeight * scaling;
+
+    int oldPadding;
+    int newPadding;
 
     // calculate scaling
-    if (scaling != 1) // when input arg is not 1
-    {
-        bi.biWidth *= scaling;
-        bi.biHeight *= scaling;
-        bi.biSizeImage = ((sizeof(RGBTRIPLE) * bi.biWidth) + padding) * abs(bi.biHeight);
-        bf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-    }
+    bi.biWidth = newWidth;
+    bi.biHeight = newHeight;
+    oldPadding = (4 - (oldWidth * sizeof(RGBTRIPLE)) % 4) % 4; // determine padding for scanlines
+    newPadding = (4 - (newWidth * sizeof(RGBTRIPLE)) % 4) % 4; // determine padding for scanlines
+    bi.biSizeImage = ((sizeof(RGBTRIPLE) * newWidth) + newPadding) * abs(newHeight);
+    bf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
 
 
     // write outfile's BITMAPFILEHEADER
@@ -91,11 +97,14 @@ int main(int argc, char *argv[])
     // write outfile's BITMAPINFOHEADER
     fwrite(&bi, sizeof(BITMAPINFOHEADER), 1, outptr);
 
+    // allocate a memory to store one scanline
+    RGBTRIPLE scanLine[newWidth * sizeof(RGBTRIPLE)];
+
     // iterate over infile's scanlines
-    for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
+    for (int i = 0, biHeight = abs(oldHeight); i < biHeight; i++)
     {
-        // iterate over pixels in scanline
-        for (int j = 0; j < bi.biWidth; j++)
+       // iterate over pixels in scanline
+        for (int j = 0; j < oldWidth; j++)
         {
             // temporary storage
             RGBTRIPLE triple;
@@ -103,20 +112,27 @@ int main(int argc, char *argv[])
             // read RGB triple from infile
             fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
 
-            // write RGB triple to outfile
+            // create a new scanline in a temporary array
             for (int k = 0; k < scaling; k++)
             {
-                fwrite(&triple, sizeof(RGBTRIPLE), 1 * scaling, outptr);
+                scanLine[(j * scaling) + k] = triple;
             }
         }
 
         // skip over padding, if any
-        fseek(inptr, padding, SEEK_CUR);
+        fseek(inptr, oldPadding, SEEK_CUR);
 
-        // then add it back (to demonstrate how)
-        for (int k = 0; k < padding; k++)
+        // write the current scanline n times
+        for (int j = 0; j < scaling; j++)
         {
-            fputc(0x00, outptr);
+            // write a new scanline once
+            fwrite(scanLine, sizeof(RGBTRIPLE), newWidth, outptr);
+
+            // write new padding
+            for (int k = 0; k < newPadding; k++)
+            {
+                fputc(0x00, outptr);
+            }
         }
     }
 
