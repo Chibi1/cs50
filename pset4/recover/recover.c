@@ -1,9 +1,12 @@
 // program which recovers deleted jpeg photos from a memory stick
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+typedef uint8_t BYTE;
 
 int main(int argc, char* argv[])
 {
@@ -14,8 +17,11 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    // remember infile name
+    char *fOpen = argv[1];
+
     // open memory card file
-    FILE *pInFile = fopen(argv[1], "r");
+    FILE *pInFile = fopen(fOpen, "r");
     FILE *pOutFile = NULL;
     // check if file open was successful
     if (pInFile == NULL)
@@ -25,60 +31,44 @@ int main(int argc, char* argv[])
         return 2;
     }
 
-    // obtain file size in bytes:
-    fseek (pInFile , 0 , SEEK_END);
-    int fileSize = ftell (pInFile);
-    rewind (pInFile);
-
+    BYTE pBuffer[512];
     const int memBlock = 512;
-    // create memory allocation for inFile storage
-    int *pBuffer = malloc(memBlock);
-    int buffer;
-    char *fileName[3];
+    char fileName[8];
+    // fileName[7] = "\0";
     int counter = 0;
-    int arr[fileSize];
-    _Bool startJpeg;
 
-    // for (int i = 0; i < fileSize; i += memBlock)
-    while (!feof(pInFile))
+    while (fread(pBuffer, memBlock, 1, pInFile) == 1)
     {
-        fread(pBuffer, memBlock, 1, pInFile);
-        buffer = *pBuffer;
         // check for jpeg signature match
-        if (pBuffer[0] == 0xff &&
-        pBuffer[1] == 0xd8 &&
-        pBuffer[2] == 0xff &&
-        (pBuffer[3] & 0xf0) == 0xe0)
+        bool startJpeg = pBuffer[0] == 0xff && pBuffer[1] == 0xd8 && pBuffer[2] == 0xff && (pBuffer[3] & 0xf0) == 0xe0;
+
+        // check whether signature match and whether a match has already been found
+        if (startJpeg && pOutFile != NULL)
         {
-            startJpeg = true;
-            sprintf(*fileName, "%3i.jpg", counter);
-            FILE *img = fopen(*fileName, "w");
-            fwrite(pBuffer, memBlock, 1, img); // if match, write block to pOutFile
+            fclose(pOutFile);
             counter++;
         }
-        // if not start of image
-        else if (!(pBuffer[0] == 0xff &&
-        pBuffer[1] == 0xd8 &&
-        pBuffer[2] == 0xff &&
-        (pBuffer[3] & 0xf0) == 0xe0))
+
+        // check signature so file is opened
+        if(startJpeg)
         {
-            startJpeg = false;
+            sprintf(fileName, "%03i.jpg", counter);
+            pOutFile = fopen(fileName, "w");
         }
-        else if(startJpeg == false)
+
+        // whenever cursor is inside jpeg image
+        if(pOutFile != NULL)
         {
+
             fwrite(pBuffer, memBlock, 1, pOutFile); // if match, write block to pOutFile
         }
-
-
     }
 
+    // close last output file
+    fclose(pOutFile);
 
-        //     fwrite(pBuffer, memBlock, 1, pOutFile);
-        // }
+    // close input file
+    fclose(pInFile);
 
-
-    free(pBuffer);
-
-
-
+    return 0;
 }
