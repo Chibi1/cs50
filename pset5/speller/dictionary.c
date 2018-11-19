@@ -57,7 +57,6 @@ bool check(const char *word)
     {
         // compare word to dictionary entry
         char *nextEntry = cursor->entry;
-
         if (strcasecmp(_word, nextEntry) == 0)
         {
             match = true;
@@ -77,10 +76,11 @@ bool check(const char *word)
     if (cursor == NULL && match == false)
     {
         free(_word);
+        // printf("[...]\n");
         return false;
     }
 
-    return 1;
+    return NULL;
 }
 
 bool loaded;
@@ -153,7 +153,7 @@ unsigned int size(void)
 {
     if (loaded)
     {
-        // printf("%i\n", dictSize);
+        // printf("\n%i\n", dictSize);
         return dictSize;
     }
     else
@@ -179,7 +179,10 @@ bool unload(void)
         // check for entry at first node of every hash index
         while (cursor == NULL)
         {
+            free(cursor);
             i++;
+            // set cursor to start of linked list
+            cursor = hashTable[i];
         }
 
         // loop through every node
@@ -194,8 +197,7 @@ bool unload(void)
             // free node the temp cursor is still pointing to
             free(temp);
         }
-
-        free(hashTable);
+        // free(hashTable);
         return true;
     }
     return false;
