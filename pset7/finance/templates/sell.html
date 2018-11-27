@@ -6,7 +6,7 @@
 
 {% block main %}
     <ul class="list-group">
-        <li class="list-group-item">Wallet size: {{ "${:,.2f}".format(balance) }}</li>
+        <li class="list-group-item">Wallet size: {{ usd(balance) }}</li>
     </ul><br><br>
     <form action="/sell" method="post">
         <div class="form-group">
@@ -37,11 +37,11 @@
                 <th scope="row">{{ history[row]["date"] }}</th>
                 <td>{{ history[row]["time"] }}</td>
                 <td>{{ history[row]["symbol"] }}</td>
-                <td>{{ history[row]["stock_price"] }}</td>
+                <td>{{ usd(history[row]["stock_price"]) }}</td>
                 <td>{{ history[row]["num_shares"] }}</td>
-                <td>{{ history[row]["total_price"] }}</td>
+                <td>{{ usd(history[row]["total_price"]) }}</td>
                 <td>{{ history[row]["transaction_type"] }}</td>
-                <td>{{ history[row]["balance"] }}</td>
+                <td>{{ usd(history[row]["balance"]) }}</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -51,7 +51,13 @@ def index():
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
     balance = wallet[0]["cash"]
 
-    # load users overview
+    # load user's owned shares value and net worth
+    shares_worth = db.execute("SELECT id, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id", id=session["user_id"])
+    eprint(shares_worth)
+    net_worth = shares_worth[0]["total_price"] + balance
+    eprint(net_worth)
+
+    # load user's overview
     overview = db.execute("SELECT id, symbol, SUM(num_shares) AS num_shares, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id, symbol",
         id=session["user_id"])
 
@@ -67,7 +73,7 @@ def index():
         current_price = quote["price"]
         quotes.append(current_price)
 
-    return render_template("index.html", balance = balance, indexO = indexO, overview = overview, quotes = quotes)
+    return render_template("index.html", usd = usd, balance = balance, net_worth = net_worth, indexO = indexO, overview = overview, quotes = quotes)
 
 
 
@@ -84,7 +90,7 @@ def buy():
     history = db.execute("""
         SELECT date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance
         FROM transactions
-        WHERE id=:id AND transaction_type='buy'""", id=session["user_id"] )
+        WHERE id=:id AND transaction_type='Purchase'""", id=session["user_id"] )
 
     # obtain length of history for user
     index = []
@@ -124,7 +130,7 @@ def buy():
         if not balance >= totalPrice:
             return apology("Sorry, insufficient funds")
         else:
-            transactionType = "buy"
+            transactionType = "Purchase"
             balance = balance - totalPrice
             today = date.today().isoformat()
             time = datetime.now().time().isoformat()
@@ -147,7 +153,7 @@ def buy():
     # when reached via link
     elif request.method == "GET":
 
-        return render_template("buy.html", balance = balance, history = history, index = index)
+        return render_template("buy.html", usd = usd, balance = balance, history = history, index = index)
 
 
 @app.route("/history")
@@ -170,7 +176,7 @@ def history():
     for i, v in enumerate(history):
         index.append(i)
 
-    return render_template("history.html", balance = balance, history = history, index = index )
+    return render_template("history.html", usd = usd, balance = balance, history = history, index = index )
 
 
 
@@ -237,7 +243,7 @@ def quote():
         else:
             quote = lookup(symbol)
 
-        return render_template("quoted.html", name = quote['name'], price = float(quote['price']), symbol = quote['symbol'])
+        return render_template("quoted.html", usd = usd, name = quote['name'], price = float(quote['price']), symbol = quote['symbol'])
 
     # when reached via link
     elif request.method == "GET":
@@ -348,7 +354,7 @@ def sell():
         if not balance >= totalPrice:
             return apology("Sorry, do not own enough of this stock")
         else:
-            transactionType = "buy"
+            transactionType = "Purchase"
             balance = balance - totalPrice
             today = date.today().isoformat()
             time = datetime.now().time().isoformat()
@@ -373,7 +379,7 @@ def sell():
     # when reached via link
     elif request.method == "GET":
 
-        return render_template("buy.html", balance = balance, history = history, index = index )
+        return render_template("buy.html", usd = usd, balance = balance, history = history, index = index )
 
 
 def errorhandler(e):
