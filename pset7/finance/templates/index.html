@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home
+{% endblock %}
+
+{% block main %}
+    <ul class="list-group">
+        <li class="list-group-item">Wallet size: {{ "${:,.2f}".format(balance) }}</li>
+    </ul><br><br>
+    <h2>Account Overview</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Stock</th>
+                <th scope="col">No. Shares Owned</th>
+                <th scope="col">Current Share Price</th>
+                <th scope="col">Total Value Owned</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in indexO %}
+            <tr>
+                <th scope="row">{{ overview[row]["symbol"] }}</th>
+                <td>{{ overview[row]["num_shares"] }}</td>
+                <td>{{ quotes[row] }}</td>
+                <td>{{ overview[row]["total_price"] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,6 +1,8 @@
 import os
+import sqlite3
 
 from cs50 import SQL, eprint
+from datetime import date, datetime, time
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from tempfile import mkdtemp
@@ -35,18 +37,59 @@ Session(app)
 # Configure CS50 Library to use SQLite database
 db = SQL("sqlite:///finance.db")
 
+# initialise sqlite3
+conn = sqlite3.connect('finance.db')
+c = conn.cursor()
+
 
 @app.route("/")
 @login_required
 def index():
     """Show portfolio of stocks"""
-    return apology("TODO")
+
+    # load current wallet size
+    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+    balance = wallet[0]["cash"]
+
+    # load users overview
+    overview = db.execute("SELECT id, symbol, SUM(num_shares) AS num_shares, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id, symbol",
+        id=session["user_id"])
+
+    # obtain length of history for user
+    indexO = []
+    for i, v in enumerate(overview):
+        indexO.append(i)
+
+    # obtain current quotes
+    quotes = []
+    for i in indexO:
+        quote = lookup(overview[i]["symbol"])
+        current_price = quote["price"]
+        quotes.append(current_price)
+
+    return render_template("index.html", balance = balance, indexO = indexO, overview = overview, quotes = quotes)
+
 
 
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
 def buy():
     """Buy shares of stock"""
+
+    # load current wallet size
+    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+    balance = wallet[0]["cash"]
+
+    # obtain users transaction history
+    history = db.execute("""
+        SELECT date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance
+        FROM transactions
+        WHERE id=:id AND transaction_type='buy'""", id=session["user_id"] )
+
+    # obtain length of history for user
+    index = []
+    for i, v in enumerate(history):
+        index.append(i)
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
@@ -60,36 +103,75 @@ def buy():
             return apology("must provide number of shares to purchase", 403)
 
         # Ensure positive integer
-        elif request.form.get("shares") < 1:
+        elif not int(request.form.get("shares")) > 0:
             return apology("please provide positive value", 403)
 
         # check whether symbol recorded
         symbol = request.form.get("symbol")
         if not symbol:
-            return apology("Sorry, could not retrieve locate company symbol", 403)
+            return apology("Sorry, could not retrieve company symbol", 403)
         else:
             quote = lookup(symbol)
 
+        # get no. stocks
+        numShares = request.form.get("shares")
+        if not numShares:
+            return apology("Sorry, could not retrieve number of shares")
+        else:
+            totalPrice = float(numShares) * float(quote["price"])
+
+        # Ensure user has enough funds in wallet
+        if not balance >= totalPrice:
+            return apology("Sorry, insufficient funds")
+        else:
+            transactionType = "buy"
+            balance = balance - totalPrice
+            today = date.today().isoformat()
+            time = datetime.now().time().isoformat()
+
+            # update transactions table
+            sql = ("""
+                INSERT INTO transactions (id, date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""")
+            values = (session["user_id"], today, time, symbol, quote["price"], int(numShares), totalPrice, transactionType, balance)
+
+            c.execute(sql, values)
+            conn.commit()
+            # c.close()
+            eprint("Table Updated")
+            db.execute("UPDATE users SET cash = :balance WHERE id = :id", balance=balance, id=session["user_id"])
 
 
-
-        return render_template("quoted.html", name = quote['name'], price = float(quote['price']), symbol = quote['symbol'])
+        return redirect("/buy")
 
     # when reached via link
     elif request.method == "GET":
 
-        # load current wallet size
-        wallet = db.execute("SELECT cash FROM users WHERE id = :id",
-                          id=session["user_id"])
-
-        return render_template("buy.html", wallet = wallet )
+        return render_template("buy.html", balance = balance, history = history, index = index)
 
 
 @app.route("/history")
 @login_required
 def history():
     """Show history of transactions"""
-    return apology("TODO")
+
+    # load current wallet size
+    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+    balance = wallet[0]["cash"]
+
+    # obtain users transaction history
+    history = db.execute("""
+        SELECT date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance
+        FROM transactions
+        WHERE id=:id""", id=session["user_id"] )
+
+    #obtain length of history for user
+    index = []
+    for i, v in enumerate(history):
+        index.append(i)
+
+    return render_template("history.html", balance = balance, history = history, index = index )
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -217,7 +299,81 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+
+    # load current wallet size
+    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+    balance = wallet[0]["cash"]
+
+    # obtain users transaction history
+    history = db.execute("""
+        SELECT date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance
+        FROM transactions
+        WHERE id=:id AND transaction_type='sell'""", id=session["user_id"] )
+
+    #obtain length of history for user
+    index = []
+    for i, v in enumerate(history):
+        index.append(i)
+
+    # User reached route via POST (as by submitting a form via POST)
+    if request.method == "POST":
+
+        # Ensure symbol was submitted
+        if not request.form.get("symbol"):
+            return apology("must provide symbol", 403)
+
+        # Ensure quantity of shares was submitted
+        elif not request.form.get("shares"):
+            return apology("must provide number of shares to sell", 403)
+
+        # Ensure positive integer
+        elif not int(request.form.get("shares")) > 0:
+            return apology("please provide positive value", 403)
+
+        # check whether symbol recorded
+        symbol = request.form.get("symbol")
+        if not symbol:
+            return apology("Sorry, could not retrieve company symbol", 403)
+        else:
+            quote = lookup(symbol)
+
+        # get no. stocks
+        numShares = request.form.get("shares")
+        if not numShares:
+            return apology("Sorry, could not retrieve number of shares")
+        else:
+            totalPrice = float(numShares) * float(quote["price"])
+
+        # Ensure user owns sufficient stocks
+        if not balance >= totalPrice:
+            return apology("Sorry, do not own enough of this stock")
+        else:
+            transactionType = "buy"
+            balance = balance - totalPrice
+            today = date.today().isoformat()
+            time = datetime.now().time().isoformat()
+
+            # update transactions table
+            sql = ("""
+                INSERT INTO transactions (id, date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""")
+            values = (session["user_id"], today, time, symbol, quote["price"], int(numShares), totalPrice, transactionType, balance)
+
+            eprint(sql)
+            eprint(values)
+            c.execute(sql, values)
+            conn.commit()
+            # c.close()
+            eprint("Table Updated")
+            db.execute("UPDATE users SET cash = :balance WHERE id = :id", balance=balance, id=session["user_id"])
+
+
+        return redirect("/buy")
+
+    # when reached via link
+    elif request.method == "GET":
+
+        return render_template("buy.html", balance = balance, history = history, index = index )
 
 
 def errorhandler(e):
