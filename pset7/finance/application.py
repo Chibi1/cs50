@@ -52,7 +52,7 @@ def index():
     #                   username=request.form.get("username"))
 
     # load current wallet size
-    id = session["user_id"]
+    id = session["user_id"][0]["id"]
     eprint(id)
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
     eprint(wallet)
@@ -88,7 +88,9 @@ def index():
 @login_required
 def buy():
     """Buy shares of stock"""
-    id = session["user_id"]
+
+    id = session["user_id"][0]["id"]
+    eprint(id)
 
     # load current wallet size
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
@@ -147,13 +149,13 @@ def buy():
             sql = ("""
                 INSERT INTO transactions (id, date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""")
-            values = (session["user_id"], today, time, symbol, quote["price"], int(numShares), totalPrice, transactionType, balance)
+            values = (id, today, time, symbol, quote["price"], int(numShares), totalPrice, transactionType, balance)
 
             c.execute(sql, values)
             conn.commit()
             # c.close()
             eprint("Table Updated")
-            db.execute("UPDATE users SET cash = :balance WHERE id = :id", balance=balance, id=session["user_id"])
+            db.execute("UPDATE users SET cash = :balance WHERE id = :id", balance=balance, id=id)
 
 
         return redirect("/buy")
@@ -169,15 +171,18 @@ def buy():
 def history():
     """Show history of transactions"""
 
+    id = session["user_id"][0]["id"]
+    eprint(id)
+
     # load current wallet size
-    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
     balance = wallet[0]["cash"]
 
     # obtain users transaction history
     history = db.execute("""
         SELECT date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance
         FROM transactions
-        WHERE id=:id""", id=session["user_id"] )
+        WHERE id=:id""", id=id)
 
     #obtain length of history for user
     index = []
@@ -209,16 +214,26 @@ def login():
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = :username",
                           username=request.form.get("username"))
+        eprint(rows)
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
             return apology("invalid username and/or password", 403)
 
+        eprint(rows)
         # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
+        # session["user_id"] = rows[0]["id"]
+        # id = session["user_id"][0]["id"]
+
+        # Remember which user logged in
+        session["user_id"] = db.execute("SELECT id FROM users WHERE username = :username",
+                          username=request.form.get("username"))
+        id = session["user_id"][0]["id"]
+        eprint(id)
 
         eprint(rows)
         eprint(session)
+        eprint(id)
 
         # Redirect user to home page
         return redirect("/")
@@ -303,7 +318,8 @@ def register():
         # Automatically log in new user
         session["user_id"] = db.execute("SELECT id FROM users WHERE username = :username",
                           username=request.form.get("username"))
-        eprint(session["user_id"])
+        id = session["user_id"][0]["id"]
+        eprint(id)
 
         # Redirect user to home page
         return redirect("/")
@@ -319,13 +335,16 @@ def register():
 def sell():
     """Sell shares of stock"""
 
+    id = session["user_id"][0]["id"]
+    eprint(id)
+
     # load current wallet size
-    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
     balance = wallet[0]["cash"]
 
     # load user's overview
     overview = db.execute("SELECT id, symbol, SUM(num_shares) AS num_shares, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id, symbol",
-        id=session["user_id"])
+        id=id)
     eprint(overview)
 
     # obtain length of history for user
@@ -340,7 +359,7 @@ def sell():
     history = db.execute("""
         SELECT date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance
         FROM transactions
-        WHERE id=:id AND transaction_type='Sale'""", id=session["user_id"] )
+        WHERE id=:id AND transaction_type='Sale'""", id=id)
 
     #obtain length of history for user
     index = []
@@ -372,7 +391,7 @@ def sell():
 
         # Get current quote
         sharesOwned = db.execute("SELECT SUM(num_shares) AS num_shares FROM transactions WHERE id = :id AND symbol = :symbol GROUP BY id, symbol",
-            id=session["user_id"], symbol=symbol)
+            id=id, symbol=symbol)
         currentQuote = lookup(symbol)["price"]
         eprint(currentQuote)
         eprint(sharesOwned[0]["num_shares"])
@@ -393,13 +412,13 @@ def sell():
             sql = ("""
                 INSERT INTO transactions (id, date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""")
-            values = (session["user_id"], today, time, symbol, currentQuote, numShares, totalPrice, transactionType, balance)
+            values = (id, today, time, symbol, currentQuote, numShares, totalPrice, transactionType, balance)
 
             c.execute(sql, values)
             conn.commit()
             # c.close()
             eprint("Table Updated")
-            db.execute("UPDATE users SET cash = :balance WHERE id = :id", balance=balance, id=session["user_id"])
+            db.execute("UPDATE users SET cash = :balance WHERE id = :id", balance=balance, id=id)
 
 
         return redirect("/sell")
