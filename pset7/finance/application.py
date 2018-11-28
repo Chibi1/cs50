@@ -51,12 +51,6 @@ def index():
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
     balance = wallet[0]["cash"]
 
-    # load user's owned shares value and net worth
-    shares_worth = db.execute("SELECT id, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id", id=session["user_id"])
-    eprint(shares_worth)
-    net_worth = shares_worth[0]["total_price"] + balance
-    eprint(net_worth)
-
     # load user's overview
     overview = db.execute("SELECT id, symbol, SUM(num_shares) AS num_shares, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id, symbol",
         id=session["user_id"])
@@ -66,12 +60,17 @@ def index():
     for i, v in enumerate(overview):
         indexO.append(i)
 
-    # obtain current quotes
+    # obtain current quotes and net worth
     quotes = []
+    net_worth = 0
     for i in indexO:
         quote = lookup(overview[i]["symbol"])
         current_price = quote["price"]
         quotes.append(current_price)
+        net_worth = net_worth + (current_price * overview[i]["num_shares"])
+
+    net_worth = net_worth + balance
+    eprint(net_worth)
 
     return render_template("index.html", usd = usd, balance = balance, net_worth = net_worth, indexO = indexO, overview = overview, quotes = quotes)
 
@@ -310,11 +309,24 @@ def sell():
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
     balance = wallet[0]["cash"]
 
+    # load user's overview
+    overview = db.execute("SELECT id, symbol, SUM(num_shares) AS num_shares, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id, symbol",
+        id=session["user_id"])
+    eprint(overview)
+
+    # obtain length of history for user
+    indexO = []
+    for i, v in enumerate(overview):
+        indexO.append(i)
+
+    # obtain num of each stock owned
+    # stockOwned = overview[]
+
     # obtain users transaction history
     history = db.execute("""
         SELECT date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance
         FROM transactions
-        WHERE id=:id AND transaction_type='sell'""", id=session["user_id"] )
+        WHERE id=:id AND transaction_type='Sale'""", id=session["user_id"] )
 
     #obtain length of history for user
     index = []
@@ -324,37 +336,41 @@ def sell():
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
 
-        # Ensure symbol was submitted
-        if not request.form.get("symbol"):
-            return apology("must provide symbol", 403)
-
         # Ensure quantity of shares was submitted
-        elif not request.form.get("shares"):
+        if not request.form.get("shares"):
             return apology("must provide number of shares to sell", 403)
 
         # Ensure positive integer
-        elif not int(request.form.get("shares")) > 0:
+        if not int(request.form.get("shares")) > 0:
             return apology("please provide positive value", 403)
 
         # check whether symbol recorded
         symbol = request.form.get("symbol")
+        eprint(symbol)
         if not symbol:
             return apology("Sorry, could not retrieve company symbol", 403)
-        else:
-            quote = lookup(symbol)
 
-        # get no. stocks
-        numShares = request.form.get("shares")
+        # get no. stocks to sell
+        numShares = int(request.form.get("shares"))
+        eprint(numShares)
         if not numShares:
             return apology("Sorry, could not retrieve number of shares")
-        else:
-            totalPrice = float(numShares) * float(quote["price"])
+
+        # Get current quote
+        sharesOwned = db.execute("SELECT SUM(num_shares) AS num_shares FROM transactions WHERE id = :id AND symbol = :symbol GROUP BY id, symbol",
+            id=session["user_id"], symbol=symbol)
+        currentQuote = lookup(symbol)["price"]
+        eprint(currentQuote)
+        eprint(sharesOwned[0]["num_shares"])
+        eprint(type(sharesOwned[0]["num_shares"]))
 
         # Ensure user owns sufficient stocks
-        if not balance >= totalPrice:
-            return apology("Sorry, do not own enough of this stock")
+        if not sharesOwned[0]["num_shares"] >= numShares:
+            return apology("Sorry, you do not own enough of this stock")
         else:
-            transactionType = "Purchase"
+            numShares *= -1
+            totalPrice = numShares * currentQuote
+            transactionType = "Sale"
             balance = balance - totalPrice
             today = date.today().isoformat()
             time = datetime.now().time().isoformat()
@@ -363,10 +379,8 @@ def sell():
             sql = ("""
                 INSERT INTO transactions (id, date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""")
-            values = (session["user_id"], today, time, symbol, quote["price"], int(numShares), totalPrice, transactionType, balance)
+            values = (session["user_id"], today, time, symbol, currentQuote, numShares, totalPrice, transactionType, balance)
 
-            eprint(sql)
-            eprint(values)
             c.execute(sql, values)
             conn.commit()
             # c.close()
@@ -374,12 +388,12 @@ def sell():
             db.execute("UPDATE users SET cash = :balance WHERE id = :id", balance=balance, id=session["user_id"])
 
 
-        return redirect("/buy")
+        return redirect("/sell")
 
     # when reached via link
     elif request.method == "GET":
 
-        return render_template("buy.html", usd = usd, balance = balance, history = history, index = index )
+        return render_template("sell.html", usd = usd, balance = balance, indexO = indexO, overview = overview, history = history, index = index )
 
 
 def errorhandler(e):

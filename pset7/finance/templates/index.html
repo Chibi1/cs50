@@ -25,7 +25,7 @@
                 <th scope="row">{{ overview[row]["symbol"] }}</th>
                 <td>{{ overview[row]["num_shares"] }}</td>
                 <td>{{ usd(quotes[row]) }}</td>
-                <td>{{ usd(overview[row]["total_price"]) }}</td>
+                <td>{{ usd(overview[row]["num_shares"] * quotes[row]) }}</td>
             </tr>
             {% endfor %}
         </tbody>
