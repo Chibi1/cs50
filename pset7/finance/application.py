@@ -47,13 +47,21 @@ c = conn.cursor()
 def index():
     """Show portfolio of stocks"""
 
+    # Query database for username
+    # rows = db.execute("SELECT * FROM users WHERE username = :username",
+    #                   username=request.form.get("username"))
+
     # load current wallet size
-    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+    id = session["user_id"]
+    eprint(id)
+    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
+    eprint(wallet)
     balance = wallet[0]["cash"]
+    eprint(balance)
 
     # load user's overview
     overview = db.execute("SELECT id, symbol, SUM(num_shares) AS num_shares, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id, symbol",
-        id=session["user_id"])
+        id=id)
 
     # obtain length of history for user
     indexO = []
@@ -80,16 +88,17 @@ def index():
 @login_required
 def buy():
     """Buy shares of stock"""
+    id = session["user_id"]
 
     # load current wallet size
-    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+    wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
     balance = wallet[0]["cash"]
 
     # obtain users transaction history
     history = db.execute("""
         SELECT date, time, symbol, stock_price, num_shares, total_price, transaction_type, balance
         FROM transactions
-        WHERE id=:id AND transaction_type='Purchase'""", id=session["user_id"] )
+        WHERE id=:id AND transaction_type='Purchase'""", id=id)
 
     # obtain length of history for user
     index = []
@@ -208,6 +217,9 @@ def login():
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
 
+        eprint(rows)
+        eprint(session)
+
         # Redirect user to home page
         return redirect("/")
 
@@ -262,15 +274,15 @@ def register():
 
         # Ensure username was submitted
         if not request.form.get("username"):
-            return apology("must provide username", 403)
+            return apology("must provide username", 400)
 
         # Ensure password and confirmation password was submitted
         elif not request.form.get("password") or not request.form.get("confirmation"):
-            return apology("must provide password", 403)
+            return apology("must provide password", 400)
 
         # Ensure confirmation password is the same as password
         elif request.form.get("password") != request.form.get("confirmation"):
-            return apology("password and confirmation password are different", 403)
+            return apology("password and confirmation password are different", 400)
 
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = :username", username=request.form.get("username"))
@@ -280,8 +292,9 @@ def register():
             return apology("username already exists", 403)
 
         # Insert new user into database
-        newEntry = db.execute("INSERT INTO users (username, hash) VALUES (:username, :hash)",
-                    username=request.form.get("username"), hash=generate_password_hash(request.form.get("password")))
+        newEntry = db.execute("INSERT INTO users (username, hash) VALUES (:username, :hashh)",
+                    username=request.form.get("username"), hashh=generate_password_hash(request.form.get("password")))
+        eprint("New Entry")
 
         # if insertion fails
         if not newEntry:
@@ -290,6 +303,7 @@ def register():
         # Automatically log in new user
         session["user_id"] = db.execute("SELECT id FROM users WHERE username = :username",
                           username=request.form.get("username"))
+        eprint(session["user_id"])
 
         # Redirect user to home page
         return redirect("/")
