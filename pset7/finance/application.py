@@ -53,11 +53,8 @@ def index():
 
     # load current wallet size
     id = session["user_id"][0]["id"]
-    # eprint(id)
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
-    # eprint(wallet)
     balance = wallet[0]["cash"]
-    eprint(balance)
 
     # load user's overview
     overview = db.execute("SELECT id, symbol, SUM(num_shares) AS num_shares, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id, symbol",
@@ -78,7 +75,6 @@ def index():
         net_worth = net_worth + (current_price * overview[i]["num_shares"])
 
     net_worth = net_worth + balance
-    # eprint(net_worth)
 
     return render_template("index.html", usd = usd, balance = balance, net_worth = net_worth, indexO = indexO, overview = overview, quotes = quotes)
 
@@ -90,7 +86,6 @@ def buy():
     """Buy shares of stock"""
 
     id = session["user_id"][0]["id"]
-    # eprint(id)
 
     # load current wallet size
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
@@ -112,22 +107,34 @@ def buy():
 
         # Ensure symbol was submitted
         if not request.form.get("symbol"):
-            return apology("must provide symbol", 403)
+            return apology("must provide symbol", 400)
 
         # Ensure quantity of shares was submitted
         elif not request.form.get("shares"):
-            return apology("must provide number of shares to purchase", 403)
+            return apology("must provide number of shares to purchase", 400)
+
+        # Ensure numeric value
+        elif not request.form.get("shares").isnumeric():
+            return apology("please provide whole number", 400)
 
         # Ensure positive integer
         elif not int(request.form.get("shares")) > 0:
-            return apology("please provide positive value", 403)
+            return apology("please provide positive value", 400)
+
+        # Ensure full number
+        elif not int(request.form.get("shares")) % 1 == 0:
+            return apology("please provide whole number", 400)
 
         # check whether symbol recorded
         symbol = request.form.get("symbol")
-        if not symbol:
-            return apology("Sorry, could not retrieve company symbol", 403)
+        if not symbol or not symbol.isalpha():
+            return apology("Sorry, could not retrieve company symbol", 400)
         else:
             quote = lookup(symbol)
+
+        # check if valid symbol
+        if not quote:
+            return apology("Sorry, Symbol is invalid", 400)
 
         # get no. stocks
         numShares = request.form.get("shares")
@@ -154,7 +161,6 @@ def buy():
             c.execute(sql, values)
             conn.commit()
             # c.close()
-            # eprint("Table Updated")
             db.execute("UPDATE users SET cash = :balance WHERE id = :id", balance=balance, id=id)
 
 
@@ -172,7 +178,6 @@ def history():
     """Show history of transactions"""
 
     id = session["user_id"][0]["id"]
-    # eprint(id)
 
     # load current wallet size
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
@@ -205,35 +210,24 @@ def login():
 
         # Ensure username was submitted
         if not request.form.get("username"):
-            return apology("must provide username", 403)
+            return apology("must provide username", 400)
 
         # Ensure password was submitted
         elif not request.form.get("password"):
-            return apology("must provide password", 403)
+            return apology("must provide password", 400)
 
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = :username",
                           username=request.form.get("username"))
-        # eprint(rows)
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
-            return apology("invalid username and/or password", 403)
-
-        # eprint(rows)
-        # Remember which user has logged in
-        # session["user_id"] = rows[0]["id"]
-        # id = session["user_id"][0]["id"]
+            return apology("invalid username and/or password", 400)
 
         # Remember which user logged in
         session["user_id"] = db.execute("SELECT id FROM users WHERE username = :username",
                           username=request.form.get("username"))
         id = session["user_id"][0]["id"]
-        # eprint(id)
-
-        # eprint(rows)
-        # eprint(session)
-        # eprint(id)
 
         # Redirect user to home page
         return redirect("/")
@@ -264,10 +258,14 @@ def quote():
 
         # check whether symbol recorded
         symbol = request.form.get("symbol")
-        if not symbol:
-            return apology("Sorry, could not retrieve quote at this time", 403)
+        if not symbol or not symbol.isalpha():
+            return apology("Sorry, could not retrieve quote at this time", 400)
         else:
             quote = lookup(symbol)
+
+        # check if valid symbol
+        if not quote:
+            return apology("Sorry, Symbol is invalid", 400)
 
         return render_template("quoted.html", usd = usd, name = quote['name'], price = float(quote['price']), symbol = quote['symbol'])
 
@@ -304,22 +302,20 @@ def register():
 
         # Ensure registered username is new
         if len(rows) == 1:
-            return apology("username already exists", 403)
+            return apology("username already exists", 400)
 
         # Insert new user into database
         newEntry = db.execute("INSERT INTO users (username, hash) VALUES (:username, :hashh)",
                     username=request.form.get("username"), hashh=generate_password_hash(request.form.get("password")))
-        # eprint("New Entry")
 
         # if insertion fails
         if not newEntry:
-            return apology("could not store new entry in server", 403)
+            return apology("could not store new entry in server", 400)
 
         # Automatically log in new user
         session["user_id"] = db.execute("SELECT id FROM users WHERE username = :username",
                           username=request.form.get("username"))
         id = session["user_id"][0]["id"]
-        # eprint(id)
 
         # Redirect user to home page
         return redirect("/")
@@ -336,7 +332,6 @@ def sell():
     """Sell shares of stock"""
 
     id = session["user_id"][0]["id"]
-    # eprint(id)
 
     # load current wallet size
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
@@ -345,7 +340,6 @@ def sell():
     # load user's overview
     overview = db.execute("SELECT id, symbol, SUM(num_shares) AS num_shares, SUM(total_price) AS total_price FROM transactions WHERE id = :id GROUP BY id, symbol",
         id=id)
-    # eprint(overview)
 
     # obtain length of history for user
     indexO = []
@@ -371,21 +365,19 @@ def sell():
 
         # Ensure quantity of shares was submitted
         if not request.form.get("shares"):
-            return apology("must provide number of shares to sell", 403)
+            return apology("must provide number of shares to sell", 400)
 
         # Ensure positive integer
         if not int(request.form.get("shares")) > 0:
-            return apology("please provide positive value", 403)
+            return apology("please provide positive value", 400)
 
         # check whether symbol recorded
         symbol = request.form.get("symbol")
-        # eprint(symbol)
         if not symbol:
-            return apology("Sorry, could not retrieve company symbol", 403)
+            return apology("Sorry, could not retrieve company symbol", 400)
 
         # get no. stocks to sell
         numShares = int(request.form.get("shares"))
-        # eprint(numShares)
         if not numShares:
             return apology("Sorry, could not retrieve number of shares")
 
@@ -393,9 +385,6 @@ def sell():
         sharesOwned = db.execute("SELECT SUM(num_shares) AS num_shares FROM transactions WHERE id = :id AND symbol = :symbol GROUP BY id, symbol",
             id=id, symbol=symbol)
         currentQuote = lookup(symbol)["price"]
-        # eprint(currentQuote)
-        # eprint(sharesOwned[0]["num_shares"])
-        # eprint(type(sharesOwned[0]["num_shares"]))
 
         # Ensure user owns sufficient stocks
         if not sharesOwned[0]["num_shares"] >= numShares:
@@ -417,7 +406,6 @@ def sell():
             c.execute(sql, values)
             conn.commit()
             # c.close()
-            # eprint("Table Updated")
             db.execute("UPDATE users SET cash = :balance WHERE id = :id", balance=balance, id=id)
 
 
@@ -435,7 +423,6 @@ def depFunds():
     """Deposit more funds"""
 
     id = session["user_id"][0]["id"]
-    # eprint(id)
 
     # load current wallet size
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
@@ -446,15 +433,14 @@ def depFunds():
 
         # Ensure quantity of shares was submitted
         if not request.form.get("funds"):
-            return apology("must provide amount to deposit", 403)
+            return apology("must provide amount to deposit", 400)
 
         # Ensure positive integer
         if not int(request.form.get("funds")) > 0:
-            return apology("please provide positive value", 403)
+            return apology("please provide positive value", 400)
 
         # get no. stocks to sell
         amount = int(request.form.get("funds"))
-        # eprint(amount)
         if not amount:
             return apology("Sorry, could not retrieve funds")
 
