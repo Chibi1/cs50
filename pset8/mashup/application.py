@@ -2,7 +2,7 @@ import os
 import re
 from flask import Flask, jsonify, render_template, request
 
-from cs50 import SQL
+from cs50 import SQL, eprint
 from helpers import lookup
 
 # Configure application
@@ -27,20 +27,28 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/articles")
+@app.route("/articles", methods = ["GET"])
 def articles():
     """Look up articles for geo"""
 
-    # TODO
-    return jsonify([])
+    query = request.args.get("geo")
+    eprint(query)
+    news = lookup(query)
+    eprint(news)
+    return jsonify(news)
 
 
-@app.route("/search")
+@app.route("/search", methods = ["GET"])
 def search():
     """Search for places that match query"""
 
-    # TODO
-    return jsonify([])
+    query = request.args.get("q")
+    eprint(f"%{query}%")
+    matches = db.execute("""
+        SELECT * FROM places WHERE postal_code LIKE :postal_code OR place_name LIKE :place_name OR admin_name1 LIKE :admin_name1""",
+        postal_code='%'+query+'%', place_name='%'+query+'%', admin_name1='%'+query+'%')
+    eprint(matches)
+    return jsonify(matches)
 
 
 @app.route("/update")

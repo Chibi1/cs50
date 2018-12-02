@@ -63,7 +63,16 @@ $(document).ready(function() {
 // Add marker for place to map
 function addMarker(place)
 {
-    // TODO
+    var markers = [];
+    // console.log(place.length)
+    // console.log(place);
+
+    var pin = {lat: parseFloat(JSON.stringify(place.latitude)), lng: parseFloat(JSON.stringify(place.longitude))};
+    // console.log(pin);
+    var mark = new google.maps.Marker({position: pin, map: map});
+    markers.push(mark);
+    console.log(markers);
+
 }
 
 
@@ -98,7 +107,7 @@ function configure()
         templates: {
             suggestion: Handlebars.compile(
                 "<div>" +
-                "TODO" +
+                "{{place_name}}, {{admin_name1}}, {{postal_code}}" +
                 "</div>"
             )
         }
@@ -122,8 +131,8 @@ function configure()
     // Re-enable ctrl- and right-clicking (and thus Inspect Element) on Google Map
     // https://chrome.google.com/webstore/detail/allow-right-click/hompjdfbfmmmgflfjdlnkohcplmboaeo?hl=en
     document.addEventListener("contextmenu", function(event) {
-        event.returnValue = true; 
-        event.stopPropagation && event.stopPropagation(); 
+        event.returnValue = true;
+        event.stopPropagation && event.stopPropagation();
         event.cancelBubble && event.cancelBubble();
     }, true);
 
@@ -150,7 +159,7 @@ function search(query, syncResults, asyncResults)
         q: query
     };
     $.getJSON("/search", parameters, function(data, textStatus, jqXHR) {
-     
+
         // Call typeahead's callback with search results (i.e., places)
         asyncResults(data);
     });
@@ -184,7 +193,7 @@ function showInfo(marker, content)
 
 
 // Update UI's markers
-function update() 
+function update()
 {
     // Get map's bounds
     let bounds = map.getBounds();
@@ -207,5 +216,8 @@ function update()
        {
            addMarker(data[i]);
        }
+
+
     });
 };
+
