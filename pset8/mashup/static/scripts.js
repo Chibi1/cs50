@@ -63,15 +63,26 @@ $(document).ready(function() {
 // Add marker for place to map
 function addMarker(place)
 {
-    var markers = [];
     // console.log(place.length)
     // console.log(place);
 
     var pin = {lat: parseFloat(JSON.stringify(place.latitude)), lng: parseFloat(JSON.stringify(place.longitude))};
     // console.log(pin);
-    var mark = new google.maps.Marker({position: pin, map: map});
-    markers.push(mark);
+    // var mark = new google.maps.Marker({position: pin, map: map});
+    // // console.log(mark);
+    // markers.push(mark);
+    function addMarker(location) {
+        var marker = new google.maps.Marker({
+          position: location,
+          map: map
+        });
+        markers.push(marker);
+    }
+    addMarker(pin);
+
     console.log(markers);
+
+
 
 }
 
@@ -147,7 +158,11 @@ function configure()
 // Remove markers from map
 function removeMarkers()
 {
-    // TODO
+    for(i=0; i<markers.length; i++){
+        markers[i].setMap(null);
+    }
+
+    markers = [];
 }
 
 
