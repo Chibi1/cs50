@@ -47,10 +47,6 @@ c = conn.cursor()
 def index():
     """Show portfolio of stocks"""
 
-    # Query database for username
-    # rows = db.execute("SELECT * FROM users WHERE username = :username",
-    #                   username=request.form.get("username"))
-
     # load current wallet size
     id = session["user_id"][0]["id"]
     wallet = db.execute("SELECT cash FROM users WHERE id = :id", id=id)
