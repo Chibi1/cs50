@@ -3,11 +3,18 @@ body {
     /* background-color: aqua; */
 }
 
+table {
+    padding: 0;
+    margin: 0;
+    /* border-spacing: 0; */
+    border-collapse: collapse;
+}
+
 td {
-    font-size: 40px;
+    /* background-color: aqua; */
+    padding: 0;
 }
 
 button {
-    font-size: 40px;
     background-color: aqua;
 }

@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
 
         <!-- documentation at http://getbootstrap.com/docs/4.0/, alternative themes at https://bootswatch.com/4-alpha/ -->
-        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" rel="stylesheet"/>
+        <!-- <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" rel="stylesheet" type="text/css"/> -->
 
-        <link href="C:\Users\Chibi\Documents\Programming\cs50\finalProject\static\styles.css" rel="stylesheet"/>
+        <link href="C:/Users/Chibi/Documents/Programming/cs50/finalProject/static/styles.css" rel="stylesheet" type="text/css"/>
 
         <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"></script>
@@ -20,30 +20,32 @@
     </head>
 
     <body>
-        <div>
-        <table class="table">
-            <tr>
-                <td scope="row"><button type="button" class="btn btn-primary">7</button></td>
-                <td><button type="button" class="btn btn-primary">8</button></td>
-                <td><button type="button" class="btn btn-primary">9</button></td>
-                <td><button type="button" class="btn btn-warning">DEL</button></td>
-                <td><button type="button" class="btn btn-warning">AC</button></td>
-            </tr>
-            <tr>
-                <td scope="row"><button type="button" class="btn btn-primary">4</button></td>
-                <td><button type="button" class="btn btn-primary">5</button></td>
-                <td><button type="button" class="btn btn-primary">6</button></td>
-                <td><button type="button" class="btn btn-success">X</button></td>
-                <td><button type="button" class="btn btn-success">/</button></td>
-            </tr>
-            <tr>
-                <td scope="row"><button type="button" class="btn btn-primary">1</button></td>
-                <td><button type="button" class="btn btn-primary">2</button></td>
-                <td><button type="button" class="btn btn-primary">3</button></td>
-                <td><button type="button" class="btn btn-success">+</button></td>
-                <td><button type="button" class="btn btn-success">/</button></td>
-            </tr>
-        </table>
+        <div id="calculator">
+        <form>
+            <table class="table table-condensed">
+                <tr>
+                    <td scope="row"><button type="button" id="digit" class="btn btn-primary btn-lg btn-block" value="7" onclick="getValue(this)">7</button></td>
+                    <td><button type="button" id="digit" class="btn btn-primary btn-lg btn-block" value=8>8</button></td>
+                    <td><button type="button" id="digit" class="btn btn-primary btn-lg btn-block" value=9>9</button></td>
+                    <td><button type="button" class="btn btn-warning btn-lg btn-block">DEL</button></td>
+                    <td><button type="button" class="btn btn-warning btn-lg btn-block">AC</button></td>
+                </tr>
+                <tr>
+                    <td scope="row"><button type="button" id="digit" class="btn btn-primary btn-lg btn-block" value=4>4</button></td>
+                    <td><button type="button" id="digit" class="btn btn-primary btn-lg btn-block" value=5>5</button></td>
+                    <td><button type="button" id="digit" class="btn btn-primary btn-lg btn-block value=6">6</button></td>
+                    <td><button type="button" class="btn btn-success btn-lg btn-block">X</button></td>
+                    <td><button type="button" class="btn btn-success btn-lg btn-block">/</button></td>
+                </tr>
+                <tr>
+                    <td scope="row"><button type="button" id="digit" class="btn btn-primary btn-lg btn-block" value=1>1</button></td>
+                    <td><button type="button" id="digit" class="btn btn-primary btn-lg btn-block value=2">2</button></td>
+                    <td><button type="button" id="digit" class="btn btn-primary btn-lg btn-block value=3">3</button></td>
+                    <td><button type="button" class="btn btn-success btn-lg btn-block">+</button></td>
+                    <td><button type="button" class="btn btn-success btn-lg btn-block" >/</button></td>
+                </tr>
+            </table>
+        </form>
         </div>      
     </body>
 
