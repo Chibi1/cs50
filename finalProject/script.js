@@ -1,7 +1,8 @@
-console.log("Hello World");
+// console.log("Hello World");
 
-var calcString = [];
-var answer = 0;
+var calcString = ["0"];
+var answer = "0";
+answered = true;
 
 $(document).ready(function(){
     $("#screen").val(answer);
@@ -10,13 +11,26 @@ $(document).ready(function(){
         var value = $(this).val();
         // numerical checks for appending value to array
         if ($.isNumeric(value)) {
-            calcString.push(value);
+            // check whether new calc should start or can append num to previous calculation
+            if (answered == true) {
+                answered = false;
+                calcString = [];
+                calcString.push(value);
+                $("#screen").val(calcString.join(""));
+            }
+            else {
+                calcString.push(value);
+                $("#screen").val(calcString.join(""));
+            }
+            
         }
         // operator checks for appending value to array
         if ( ["+", "-", "*", "/", ".", "^"].includes(value)) {
+            answered = false;
             if (calcString.length != 0) {
                 if (!["+", "-", "*", "/", ".", "^"].includes(calcString[calcString.length - 1])) {
                     calcString.push(value);
+                    $("#screen").val(calcString.join(""));
                     // console.log(calcString[-1]);
                 }
             }
@@ -24,22 +38,35 @@ $(document).ready(function(){
         // implement parenthesis
         if (["(", ")"].includes(value)) {
             calcString.push(value);
+            $("#screen").val(calcString.join(""));
         }
-        // implement calc cancelling buttons
-        if (value == "DEL" || value == "AC") {
+        // implement delete button
+        if (value == "DEL") {
+            answer = 0;
+            $("#screen").val(answer);
+            console.log(answer);
             calcString = [];
         }
         
         // update calculator screen
         if (value != "=") {
-            $("#screen").val(calcString.join(""));
-            console.log(calcString.join(""));
+            
+            // console.log(calcString.join(""));
         }
         else {
-            answer = eval(calcString.join(""));
-            $("#screen").val(answer);
-            console.log(answer);
-            calcString = [];
+            if (calcString.length != 0) {
+                answer = eval(calcString.join(""));
+                $("#screen").val(answer);
+                answered = true;
+                console.log(answer);
+                // calcString = [];
+            }
+            else {
+                $("#screen").val(answer);
+                answered = true;
+                console.log(answer);
+            }
+            
         }
         
     })
