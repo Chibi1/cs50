@@ -1,18 +1,40 @@
 console.log("Hello World");
 
+var calcString = [];
+
 $(document).ready(function(){
-    // get digit
-    // var value = document.getElementById("digit").onclick = function() {
-    //     return this.value;
-    // }
-    // function getValue() {
-    //     var digit = document.getElementById("digit").value;
-    //     console.log(this.value);
-    // }
-    // $("#digit").click(getValue);
+    // append values from button press to array
     $("input").click(function() {
         var value = $(this).val();
-        console.log(value);
+        // numerical checks for appending value to array
+        if ($.isNumeric(value)) {
+            calcString.push(value);
+        }
+        // operator checks for appending value to array
+        if ( ["+", "-", "*", "/", ".", "^"].includes(value)) {
+            if (calcString.length != 0) {
+                if (!["+", "-", "*", "/", ".", "^"].includes(calcString[calcString.length - 1])) {
+                    calcString.push(value);
+                    // console.log(calcString[-1]);
+                }
+            }
+        }
+        // implement parenthesis
+        if (["(", ")"].includes(value)) {
+            calcString.push(value);
+        }
+        // implement calc cancelling buttons
+        if (value == "DEL" || value == "AC") {
+            calcString = [];
+        }
+        // get answer
+        if (value == "=") {
+            answer = eval(calcString.join(""));
+            console.log(answer);
+            calcString = [];
+        }
+        
+        console.log(calcString);
     })
 
     // cancel out post button click focus
