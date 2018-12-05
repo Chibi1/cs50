@@ -1,0 +1,13 @@
+body {
+    text-align: center;
+    /* background-color: aqua; */
+}
+
+td {
+    font-size: 40px;
+}
+
+button {
+    font-size: 40px;
+    background-color: aqua;
+}
