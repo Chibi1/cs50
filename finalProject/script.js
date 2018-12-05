@@ -27,14 +27,22 @@ $(document).ready(function(){
         if (value == "DEL" || value == "AC") {
             calcString = [];
         }
-        // get answer
-        if (value == "=") {
+        
+        // update calculator screen
+        if (value != "=") {
+            $("#screen").val(calcString.join(""));
+            console.log(calcString.join(""));
+        }
+        else {
             answer = eval(calcString.join(""));
+            $("#screen").val(answer);
             console.log(answer);
             calcString = [];
+            if (!answer) {
+                $("#screen").val(answer);
+            }
         }
         
-        console.log(calcString);
     })
 
     // cancel out post button click focus
