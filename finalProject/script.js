@@ -1,8 +1,10 @@
 console.log("Hello World");
 
 var calcString = [];
+var answer = 0;
 
 $(document).ready(function(){
+    $("#screen").val(answer);
     // append values from button press to array
     $("input").click(function() {
         var value = $(this).val();
@@ -38,9 +40,6 @@ $(document).ready(function(){
             $("#screen").val(answer);
             console.log(answer);
             calcString = [];
-            if (!answer) {
-                $("#screen").val(answer);
-            }
         }
         
     })
