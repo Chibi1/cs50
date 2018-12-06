@@ -1,10 +1,11 @@
 // console.log("Hello World");
 
-var calcString = [""];
+var calcString = [];
+var power = []
 var answer = "0";
 answered = true;
 operating = false;
-bracket = true;
+inBracket = false;
 powered = false;
 
 $(document).ready(function(){
@@ -18,12 +19,12 @@ $(document).ready(function(){
             if (answered == true) {
                 answered = false;
                 operating = false;
-                bracket = false;
                 calcString = [];
                 calcString.push(value);
                 $("#screen").val(calcString.join(""));
             }
             else {
+                operating = false;
                 calcString.push(value);
                 $("#screen").val(calcString.join(""));
             }
@@ -34,33 +35,47 @@ $(document).ready(function(){
             if (operating == false) {
                 answered = false;
                 operating = true;
-                bracket = false;
                 calcString.push(value);
                 $("#screen").val(calcString.join(""));
                 // console.log(calcString[-1]);
             }
         }
         // implement parenthesis
-        if (["(", ")"].includes(value) && (operating == true || bracket == true)) {
+        if (value == "(") {
+            operating = true;
+            inBracket = true;
+            calcString.push(value);
+            $("#screen").val(calcString.join(""));
+        }
+        else if (value == ")") {
             operating = false;
+            inBracket = false;
             calcString.push(value);
             $("#screen").val(calcString.join(""));
         }
         // implement power
-        if (value == "^" && operating == false) {
-            bracket = true;
+        if (value == "x^y" && operating == false) {
+            answered = false;
+            operating = true;
+            inBracket = true;
             powered = true;
             calcString.unshift("(");
             calcString.push(")^(");
-            $("#screen").val(calcString.join(""));
-            console.log(calcString);
+            var base = calcString.join("")
+            $("#screen").val(base);
+            console.log(base);            
+        }
+        if (value == ")" && powered == true && inBracket == false) {
+            inBracket = false;
+            powered = false;
+            Math.pow()
         }
         // implement delete button
         if (value == "DEL") {
             answer = 0;
             answered = true;
             operating = false;
-            bracket = true;
+            inBracket = false;
             $("#screen").val(answer);
             console.log(answer);
             calcString = [];
@@ -69,15 +84,15 @@ $(document).ready(function(){
         // update calculator screen
         if (value != "=") {
             
-            // console.log(calcString.join(""));
+            console.log(calcString.join(""));
         }
         else {
             if (calcString.length != 0) {
                 answer = eval(calcString.join(""));
                 $("#screen").val(answer);
                 answered = true;
-                operating = true;
-                bracket = false;
+                operating = false;
+                inBracket = false;
                 console.log(answer);
                 // calcString = [];
             }
@@ -85,16 +100,22 @@ $(document).ready(function(){
                 $("#screen").val(answer);
                 answered = true;
                 operating = false;
-                bracket = true;     
+                inBracket = true;     
                 console.log(answer);
             }
             
         }
+
+        console.log("answered: " + answered);
+        console.log("operating: " + operating);
+        console.log("inBracket: " + inBracket);
+        console.log("powered: " + powered);
         
     })
+    
 
     // cancel out post button click focus
-    $("btn").mouseup(function(){
+    $(".btn").mouseup(function(){
         $(this).blur();
     })
 })
